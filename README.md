@@ -9,10 +9,10 @@ console, and can provide announcements as a service via e.g. a webhook.
 
 ```shell
 Usage of ./psa:
+  -dryrun
+    	validate and log but don't send anything
   -message string
     	the message to announce
-  -template string
-    	template to apply when announcing (default "📣 {{.Message}}")
   -v	verbose logging
 ```
 
@@ -26,9 +26,19 @@ All configuration is optional, but without any there will be nowhere to
 announce messages.
 
 ```shell
-export DISCORD_WEBHOOK="https://discord.com/api/webhooks/.../..."
-export SLACK_WEBHOOK="https://hooks.slack.com/services/.../.../..."
+export PSA_DISCORD_WEBHOOK="https://discord.com/api/webhooks/.../..."
+export PSA_SLACK_WEBHOOK="https://hooks.slack.com/services/.../.../..."
 ```
+
+If you want to customize the way announcements are presented, you can
+set `PSA_MSG_TEMPLATE` in your environment:
+
+```shell
+export PSA_MSG_TEMPLATE="📣 {{.Message}}"
+```
+
+`.Message` is (currently) the only field available to the template. If
+your template does not use it, `psa` will not send anything.
 
 [Discord webhooks intro]: https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks
 [Slack webhooks API guide]: https://api.slack.com/messaging/webhooks
@@ -45,6 +55,7 @@ export SLACK_WEBHOOK="https://hooks.slack.com/services/.../.../..."
 
 ## Maybe TODO
 
+- Structured logging
 - RBAC (users authenticated by e.g. Slack can be authorized to announce)
 - Announce from Slack or Discord
 - More integrations
