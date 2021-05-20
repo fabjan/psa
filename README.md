@@ -35,19 +35,17 @@ export SLACK_WEBHOOK="https://hooks.slack.com/services/.../.../..."
 
 ## TODO
 
-[x] CLI for sending
-[x] Discord announce
-[x] Slack announce
-[ ] incoming webhook (HMAC verification)
-[ ] Twitter announce
-[ ] configuration by simple file in `~/.config` (simplifying CLI use)
-[ ] more configurable announcement sinks (e.g. multiple Discord hooks)
+- [x] CLI for sending
+- [x] Discord announce
+- [x] Slack announce
+- [ ] incoming webhook (HMAC verification)
+- [ ] Twitter announce
+- [ ] configuration by simple file in `~/.config` (simplifying CLI use)
+- [ ] more configurable announcement sinks (e.g. multiple Discord hooks)
 
 ## Maybe TODO
 
 - RBAC (users authenticated by e.g. Slack can be authorized to announce)
-
 - Announce from Slack or Discord
-
 - More integrations
   - IRC, email, text messages, Signal, Telegram, Cabal
