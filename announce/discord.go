@@ -27,8 +27,7 @@ func (d *Discordian) Announce(m string) error {
 	if err != nil {
 		return fmt.Errorf("failed Discord marshalling: %w", err)
 	}
-	resp, err := http.DefaultClient.Do(req)
-	err = handleResponse(resp, err)
+	err = handleResponse(http.DefaultClient.Do(req))
 	if err != nil {
 		return fmt.Errorf("failed Discord announce: %w", err)
 	}
