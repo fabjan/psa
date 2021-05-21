@@ -4,7 +4,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 )
+
+// N.B this is very similar to the Slacker code,
+// but I'm not sure yet how much they will diverge so
+// the webhooking will not be abstracted yet
 
 // Discordian can announce to Discord
 type Discordian struct {
@@ -18,10 +23,11 @@ func DiscordHook(url *url.URL) *Discordian {
 
 // Announce sends the given message to the configured channel(s)
 func (d *Discordian) Announce(m string) error {
-	payload := url.Values{
-		"content": []string{m},
+	req, err := d.makeRequest(m)
+	if err != nil {
+		return fmt.Errorf("failed Discord marshalling: %w", err)
 	}
-	resp, err := http.DefaultClient.PostForm(d.url.String(), payload)
+	resp, err := http.DefaultClient.Do(req)
 	err = handleResponse(resp, err)
 	if err != nil {
 		return fmt.Errorf("failed Discord announce: %w", err)
@@ -31,4 +37,17 @@ func (d *Discordian) Announce(m string) error {
 
 func (*Discordian) String() string {
 	return "Discord Announcer"
+}
+
+func (d *Discordian) makeRequest(msg string) (*http.Request, error) {
+	payload := url.Values{
+		"content": []string{msg},
+	}
+	body := strings.NewReader(payload.Encode())
+	req, err := http.NewRequest(http.MethodPost, d.url.String(), body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	return req, nil
 }

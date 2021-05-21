@@ -8,6 +8,10 @@ import (
 	"net/url"
 )
 
+// N.B this is very similar to the Discordian code,
+// but I'm not sure yet how much they will diverge so
+// the webhooking will not be abstracted yet
+
 // Slacker can announce to Slack
 type Slacker struct {
 	url *url.URL
@@ -20,12 +24,11 @@ func SlackHook(url *url.URL) *Slacker {
 
 // Announce sends the given message to the configured channel(s)
 func (s *Slacker) Announce(m string) error {
-	var payload bytes.Buffer
-	err := json.NewEncoder(&payload).Encode(map[string]string{"text": m})
+	req, err := s.makeRequest(m)
 	if err != nil {
-		return fmt.Errorf("failed Slack payload marshalling: %w", err)
+		return fmt.Errorf("failed Slack marshalling: %w", err)
 	}
-	resp, err := http.DefaultClient.Post(s.url.String(), "application/json", &payload)
+	resp, err := http.DefaultClient.Do(req)
 	err = handleResponse(resp, err)
 	if err != nil {
 		return fmt.Errorf("failed Slack announce: %w", err)
@@ -35,4 +38,18 @@ func (s *Slacker) Announce(m string) error {
 
 func (*Slacker) String() string {
 	return "Slack Announcer"
+}
+
+func (s *Slacker) makeRequest(msg string) (*http.Request, error) {
+	var payload bytes.Buffer
+	err := json.NewEncoder(&payload).Encode(map[string]string{"text": msg})
+	if err != nil {
+		return nil, fmt.Errorf("failed Slack payload marshalling: %w", err)
+	}
+	req, err := http.NewRequest(http.MethodPost, s.url.String(), &payload)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	return req, nil
 }
