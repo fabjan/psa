@@ -6,6 +6,11 @@ import (
 	"net/http"
 )
 
+// Announcer announces messages for the public
+type Announcer interface {
+	Announce(string) error
+}
+
 func handleResponse(resp *http.Response, err error) error {
 	if err != nil {
 		return fmt.Errorf("failed sending request: %w", err)

@@ -5,17 +5,9 @@ import (
 	"flag"
 	"html/template"
 	"log"
-	"net/url"
-	"os"
-	"strings"
 
-	"github.com/fabjan/psa/announce"
+	"github.com/fabjan/psa/configure"
 )
-
-// Announcer announces messages for the public
-type Announcer interface {
-	Announce(string) error
-}
 
 func main() {
 
@@ -25,11 +17,17 @@ func main() {
 
 	flag.Parse()
 
-	announcement := renderAnnouncement(*flagMsg)
+	cfg, err := configure.FromEnv()
+
+	if err != nil {
+		log.Fatalf("configuration error: %v", err)
+	}
+
+	announcement := renderAnnouncement(cfg.MessageTemplate, *flagMsg)
 
 	log.Printf("PSA: %s\n", announcement)
 
-	announcers := configureAnnouncers()
+	announcers := cfg.Announcers()
 
 	if *flagVerbose {
 		log.Printf("%d announcers configured\n", len(announcers))
@@ -62,50 +60,10 @@ func main() {
 	}
 }
 
-func mustGetURL(rawURL string) *url.URL {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		log.Fatalf("can't parse URL %s: %v\n", rawURL, err)
-	}
-	return u
-}
-
-func renderAnnouncement(m string) string {
-	rawTmpl := os.Getenv("PSA_MSG_TEMPLATE")
-	if rawTmpl == "" {
-		rawTmpl = "📣 {{.Message}}"
-	}
-	if !strings.Contains(rawTmpl, ".Message") {
-		// this probably won't catch all issues
-		log.Fatalf("$PSA_MSG_TEMPLATE has no '.Message'")
-	}
-
-	tmpl := template.Must(template.New("message").Parse(rawTmpl))
-
+func renderAnnouncement(tmpl *template.Template, msg string) string {
 	var buf bytes.Buffer
 	tmpl.Execute(&buf, struct{ Message string }{
-		Message: m,
+		Message: msg,
 	})
-
 	return template.HTMLEscapeString(buf.String())
-}
-
-func configureAnnouncers() []Announcer {
-	anns := []Announcer{}
-
-	dWH := os.Getenv("PSA_DISCORD_WEBHOOK")
-	if dWH != "" {
-		u := mustGetURL(dWH)
-		log.Printf("Discord webhook detected\n")
-		anns = append(anns, announce.DiscordHook(u))
-	}
-
-	sWH := os.Getenv("PSA_SLACK_WEBHOOK")
-	if sWH != "" {
-		u := mustGetURL(sWH)
-		log.Printf("Slack webhook detected\n")
-		anns = append(anns, announce.SlackHook(u))
-	}
-
-	return anns
 }
