@@ -1,6 +1,8 @@
 package configure
 
 import (
+	"errors"
+	"fmt"
 	"html/template"
 	"log"
 	"net/url"
@@ -30,13 +32,19 @@ func FromEnv() (cfg AppConfig, err error) {
 func FromStrings(discordWH, slackWH, msgTmpl string) (cfg AppConfig, err error) {
 
 	if discordWH != "" {
-		cfg.DiscordHookURL = mustGetURL(discordWH)
-		log.Printf("Discord webhook detected\n")
+		cfg.DiscordHookURL, err = parseHTTPURL(discordWH)
+		if err != nil {
+			return cfg, err
+		}
+		log.Printf("Discord webhook configured\n")
 	}
 
 	if slackWH != "" {
-		cfg.SlackHookURL = mustGetURL(slackWH)
-		log.Printf("Discord webhook detected\n")
+		cfg.SlackHookURL, err = parseHTTPURL(slackWH)
+		if err != nil {
+			return cfg, err
+		}
+		log.Printf("Slack webhook configured\n")
 	}
 
 	if msgTmpl == "" {
@@ -44,7 +52,7 @@ func FromStrings(discordWH, slackWH, msgTmpl string) (cfg AppConfig, err error) 
 	}
 	if !strings.Contains(msgTmpl, ".Message") {
 		// this probably won't catch all issues
-		log.Fatalf("$PSA_MSG_TEMPLATE has no '.Message'")
+		return cfg, errors.New("configured message template has no '.Message'")
 	}
 
 	tmpl, err := template.New("message").Parse(msgTmpl)
@@ -73,10 +81,13 @@ func (cfg *AppConfig) Announcers() []announce.Announcer {
 	return anns
 }
 
-func mustGetURL(rawURL string) *url.URL {
+func parseHTTPURL(rawURL string) (*url.URL, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
-		log.Fatalf("can't parse URL %s: %v\n", rawURL, err)
+		return nil, fmt.Errorf("can't parse URL %s: %v", rawURL, err)
 	}
-	return u
+	if !strings.HasPrefix(u.Scheme, "http") {
+		return nil, fmt.Errorf("can't parse URL %s: %v", rawURL, err)
+	}
+	return u, nil
 }
